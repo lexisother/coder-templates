@@ -82,6 +82,11 @@ data "coder_parameter" "toolset" {
         name = "PHP"
         value = "php"
     }
+
+    option {
+        name = "Go"
+        value = "go"
+    }
 }
 
 module "jetbrains_gateway" {
@@ -90,6 +95,6 @@ module "jetbrains_gateway" {
   agent_id       = coder_agent.main.id
   agent_name     = "main"
   folder         = "/home/coder"
-  jetbrains_ides = ["WS", "PS", "IU", "CL", "PY"]
+  jetbrains_ides = ["WS", "PS", "GO", "IU", "CL", "PY"]
   latest         = true
 }

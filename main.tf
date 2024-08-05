@@ -50,6 +50,9 @@ resource "coder_agent" "main" {
   startup_script = <<-EOT
     set -e
 
+    sudo apt-get update -y
+    sudo apt-get install -y --no-install-recommends ca-certificates apt-transport-https software-properties-common wget gpg curl jq git
+
     # install and start code-server
     curl -fsSL https://code-server.dev/install.sh | sh -s -- --method=standalone --prefix=/tmp/code-server --version 4.11.0
     /tmp/code-server/bin/code-server --auth none --port 13337 >/tmp/code-server.log 2>&1 &
@@ -71,14 +74,21 @@ resource "coder_agent" "main" {
       DEBIAN_FRONTEND=noninteractive sudo apt-get install -y tzdata
       sudo dpkg-reconfigure --frontend noninteractive tzdata
 
-      sudo apt-get install -y --no-install-recommends ca-certificates apt-transport-https software-properties-common wget gpg curl jq git
-
       sudo apt-get install -y php8.3-fpm
       sudo apt-get install -y --no-install-recommends php8.3
 
       php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
       sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
       php -r "unlink('composer-setup.php');"
+    fi
+
+    if [ "$TOOLSET" == "go" ]; then
+      sudo apt-get update -y
+      sudo apt-get install build-essential
+      wget https://go.dev/dl/go1.22.5.linux-amd64.tar.gz
+      sudo rm -rf /usr/local/go && \
+        sudo tar -C /usr/local -xzf go1.22.5.linux-amd64.tar.gz
+      rm -rf go1.22.5.linux-amd64.tar.gz
     fi
   EOT
 
