@@ -63,30 +63,31 @@ data "coder_parameter" "home_disk_size" {
 }
 
 data "coder_parameter" "toolset" {
-    name = "Language Toolset"
-    description = "Which language toolset do you want to use?"
+  name = "Language Toolset"
+  description = "Which language toolset do you want to use?"
 
-    type = "string"
-    default = ""
+  type = "string"
+  default = ""
 
-    order = 1
+  order = 1
 
-    mutable = true
+  mutable = true
 
-    option {
-        name = "JavaScript"
-        value = "javascript"
-    }
-
-    option {
-        name = "PHP"
-        value = "php"
-    }
-
-    option {
-        name = "Go"
-        value = "go"
-    }
+  option {
+    name = "JavaScript"
+    value = "javascript"
+    icon = "/icon/javascript.svg"
+  }
+  option {
+    name = "PHP"
+    value = "php"
+    icon = "/icon/php.svg"
+  }
+  option {
+    name = "Go"
+    value = "go"
+    icon = "/icon/go.svg"
+  }
 }
 
 module "jetbrains_gateway" {
