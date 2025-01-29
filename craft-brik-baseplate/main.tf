@@ -47,7 +47,7 @@ resource "coder_agent" "main" {
     set -e
 
     sudo apt-get update -y
-    sudo apt-get install -y --no-install-recommends ca-certificates apt-transport-https software-properties-common wget gpg curl jq git
+    sudo apt-get install -y --no-install-recommends ca-certificates apt-transport-https software-properties-common wget gpg curl jq git lsb-release
 
     sudo add-apt-repository ppa:ondrej/php
     sudo apt-get update -y
@@ -56,11 +56,20 @@ resource "coder_agent" "main" {
     DEBIAN_FRONTEND=noninteractive sudo apt-get install -y tzdata
     sudo dpkg-reconfigure --frontend noninteractive tzdata
 
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash
+    export NVM_DIR="$HOME/.nvm" && \
+      [ -s "$NVM_DIR/nvm.sh" ]    && \
+      . "$NVM_DIR/nvm.sh"         && \
+      nvm install node            && \
+      npm i -g pnpm npm
+
+    echo ". ~/.nvm/nvm.sh" >> /home/coder/.bashrc
+
     sudo apt-get install -y --no-install-recommends php8.3 \
       php8.3-simplexml php8.3-bcmath php8.3-curl \
       php8.3-dom php8.3-gd php8.3-intl php8.3-zip \
       php8.3-pdo php8.3-mysql php8.3-pgsql php8.3-fpm \
-      php8.3-mbstring
+      php8.3-mbstring php8.3-imagick
 
     php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
     sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
@@ -85,9 +94,19 @@ resource "coder_agent" "main" {
       sudo -u postgres psql -c "ALTER USER postgres with encrypted password 'root';"
     fi
 
+    # install and run redis
+    sudo apt-get -y install 
+    curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+    sudo chmod 644 /usr/share/keyrings/redis-archive-keyring.gpg
+    echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
+    sudo apt-get update -y
+    sudo apt-get install -y redis
+    sudo service redis-server start
+
     # baseplate isn't there, set it up
-    if [ ! -d craft-baseplate ]; then composer create-project brikdigital/craft-baseplate; fi
+    if [ ! -d craft-baseplate ]; then composer create-project brikdigital/craft-baseplate --no-scripts; fi
     cd craft-baseplate
+    cp .env.example.dev .env
 
     # we haven't touched this yet
     if [ "$(cat .env | grep -c 'CRAFT_DB_DATABASE=craft')" -eq 0 ]; then
@@ -96,6 +115,8 @@ resource "coder_agent" "main" {
       sed -i 's/DATABASE=/DATABASE=craft/' .env
       sed -i 's/USER=root/USER=postgres/' .env
       sed -i 's/PASSWORD=/PASSWORD=root/' .env
+      sed -i 's/REDIS_HOSTNAME=/REDIS_HOSTNAME=localhost/' .env
+      sed -i 's/REDIS_PORT=/REDIS_PORT=6379/' .env
     fi
 
     # craft reports not being installed
@@ -117,8 +138,16 @@ resource "coder_agent" "main" {
   # For basic resources, you can use the `coder stat` command.
   # If you need more control, you can write your own script.
   metadata {
+    display_name = "IP Address"
+    key          = "0_ip_address"
+    script       = "hostname -i"
+    interval     = 60
+    timeout      = 1
+  }
+
+  metadata {
     display_name = "CPU Usage"
-    key          = "0_cpu_usage"
+    key          = "1_cpu_usage"
     script       = "coder stat cpu"
     interval     = 10
     timeout      = 1
@@ -126,7 +155,7 @@ resource "coder_agent" "main" {
 
   metadata {
     display_name = "RAM Usage"
-    key          = "1_ram_usage"
+    key          = "2_ram_usage"
     script       = "coder stat mem"
     interval     = 10
     timeout      = 1

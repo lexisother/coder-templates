@@ -74,8 +74,22 @@ resource "coder_agent" "main" {
       DEBIAN_FRONTEND=noninteractive sudo apt-get install -y tzdata
       sudo dpkg-reconfigure --frontend noninteractive tzdata
 
-      sudo apt-get install -y php8.3-fpm
-      sudo apt-get install -y --no-install-recommends php8.3
+      sudo apt-get install -y --no-install-recommends php8.3 \
+        php8.3-simplexml php8.3-bcmath php8.3-curl \
+        php8.3-dom php8.3-gd php8.3-intl php8.3-zip \
+        php8.3-pdo php8.3-mysql php8.3-pgsql php8.3-fpm
+
+      #curl -fsSL https://repo.mysql.com/RPM-GPG-KEY-mysql-2023 | \
+      #  sudo gpg --dearmor -o /etc/apt/keyrings/mysql-keyring.gpg
+      #echo "deb [signed-by=/etc/apt/keyrings/mysql-keyring.gpg] https://repo.mysql.com/apt/ubuntu noble mysql-8.0" | \
+      #  sudo tee -a /etc/apt/sources.list
+      #sudo apt update
+      #sudo apt install -y mysql-server
+
+      sudo apt-get install -y postgresql-common
+      sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+      sudo apt-get install -y postgresql-16
+      sudo -u postgres pg_ctlcluster 16 main start
 
       php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
       sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
@@ -98,8 +112,16 @@ resource "coder_agent" "main" {
   # For basic resources, you can use the `coder stat` command.
   # If you need more control, you can write your own script.
   metadata {
+    display_name = "IP Address"
+    key          = "0_ip_address"
+    script       = "hostname -i"
+    interval     = 60
+    timeout      = 1
+  }
+
+  metadata {
     display_name = "CPU Usage"
-    key          = "0_cpu_usage"
+    key          = "1_cpu_usage"
     script       = "coder stat cpu"
     interval     = 10
     timeout      = 1
@@ -107,7 +129,7 @@ resource "coder_agent" "main" {
 
   metadata {
     display_name = "RAM Usage"
-    key          = "1_ram_usage"
+    key          = "2_ram_usage"
     script       = "coder stat mem"
     interval     = 10
     timeout      = 1
