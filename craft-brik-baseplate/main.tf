@@ -97,13 +97,14 @@ resource "coder_agent" "main" {
     fi
 
     # install and run redis
-    sudo apt-get -y install
+    sudo apt-get -y install 
     curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
     sudo chmod 644 /usr/share/keyrings/redis-archive-keyring.gpg
     echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
     sudo apt-get update -y
     sudo apt-get install -y redis
     redis-server --daemonize yes
+    # sudo service redis-server start
 
     # baseplate isn't there, set it up
     if [ ! -d craft-baseplate ]; then composer create-project brikdigital/craft-baseplate --no-scripts; fi
@@ -119,6 +120,7 @@ resource "coder_agent" "main" {
       sed -i 's/PASSWORD=db/PASSWORD=root/' .env
       sed -i 's/PORT=3306/PORT=5432/' .env
       sed -i 's/REDIS_HOSTNAME=redis/REDIS_HOSTNAME=localhost/' .env
+      # sed -i 's/REDIS_PORT=/REDIS_PORT=6379/' .env
     fi
 
     # craft reports not being installed
