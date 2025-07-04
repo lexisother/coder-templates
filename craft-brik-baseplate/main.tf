@@ -95,13 +95,13 @@ resource "coder_agent" "main" {
     fi
 
     # install and run redis
-    sudo apt-get -y install 
+    sudo apt-get -y install
     curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
     sudo chmod 644 /usr/share/keyrings/redis-archive-keyring.gpg
     echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
     sudo apt-get update -y
     sudo apt-get install -y redis
-    sudo service redis-server start
+    redis-server --daemonize yes
 
     # baseplate isn't there, set it up
     if [ ! -d craft-baseplate ]; then composer create-project brikdigital/craft-baseplate --no-scripts; fi
@@ -111,12 +111,12 @@ resource "coder_agent" "main" {
     # we haven't touched this yet
     if [ "$(cat .env | grep -c 'CRAFT_DB_DATABASE=craft')" -eq 0 ]; then
       sed -i 's/DRIVER=mysql/DRIVER=pgsql/' .env
+      sed -i 's/SERVER=db/SERVER=localhost/' .env
+      sed -i 's/DATABASE=db/DATABASE=craft/' .env
+      sed -i 's/USER=db/USER=postgres/' .env
+      sed -i 's/PASSWORD=db/PASSWORD=root/' .env
       sed -i 's/PORT=3306/PORT=5432/' .env
-      sed -i 's/DATABASE=/DATABASE=craft/' .env
-      sed -i 's/USER=root/USER=postgres/' .env
-      sed -i 's/PASSWORD=/PASSWORD=root/' .env
-      sed -i 's/REDIS_HOSTNAME=/REDIS_HOSTNAME=localhost/' .env
-      sed -i 's/REDIS_PORT=/REDIS_PORT=6379/' .env
+      sed -i 's/REDIS_HOSTNAME=redis/REDIS_HOSTNAME=localhost/' .env
     fi
 
     # craft reports not being installed
