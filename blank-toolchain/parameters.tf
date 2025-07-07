@@ -89,13 +89,3 @@ data "coder_parameter" "toolset" {
     icon = "/icon/go.svg"
   }
 }
-
-module "jetbrains_gateway" {
-  source         = "registry.coder.com/modules/jetbrains-gateway/coder"
-  version        = "1.0.13"
-  agent_id       = coder_agent.main.id
-  agent_name     = "main"
-  folder         = "/home/coder"
-  jetbrains_ides = ["WS", "PS", "GO", "IU", "CL", "PY"]
-  latest         = true
-}

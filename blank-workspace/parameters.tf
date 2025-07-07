@@ -61,13 +61,3 @@ data "coder_parameter" "home_disk_size" {
     max = 99999
   }
 }
-
-module "jetbrains_gateway" {
-  source         = "registry.coder.com/modules/jetbrains-gateway/coder"
-  version        = "1.0.13"
-  agent_id       = coder_agent.main.id
-  agent_name     = "main"
-  folder         = "/home/coder"
-  jetbrains_ides = ["WS", "PS", "GO", "IU", "CL", "PY"]
-  latest         = true
-}

@@ -38,12 +38,13 @@ provider "kubernetes" {
   config_path = var.use_kubeconfig == true ? "~/.kube/config" : null
 }
 
+data "coder_provisioner" "me" {}
 data "coder_workspace" "me" {}
 data "coder_workspace_owner" "me" {}
 
 resource "coder_agent" "main" {
-  os             = "linux"
-  arch           = "amd64"
+  os             = data.coder_provisioner.me.os
+  arch           = data.coder_provisioner.me.arch
 
   env = {
     "TOOLSET" = data.coder_parameter.toolset.value
@@ -54,10 +55,6 @@ resource "coder_agent" "main" {
 
     sudo apt-get update -y
     sudo apt-get install -y --no-install-recommends ca-certificates apt-transport-https software-properties-common wget gpg curl jq git
-
-    # install and start code-server
-    curl -fsSL https://code-server.dev/install.sh | sh -s -- --method=standalone --prefix=/tmp/code-server --version 4.11.0
-    /tmp/code-server/bin/code-server --auth none --port 13337 >/tmp/code-server.log 2>&1 &
 
     if [ "$TOOLSET" == "javascript" ]; then
       curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash
@@ -173,19 +170,37 @@ resource "coder_agent" "main" {
   }
 }
 
-# code-server
-resource "coder_app" "code-server" {
-  agent_id     = coder_agent.main.id
-  slug         = "code-server"
-  display_name = "code-server"
-  icon         = "/icon/code.svg"
-  url          = "http://localhost:13337?folder=/home/coder"
-  subdomain    = false
-  share        = "owner"
+module "coder-login" {
+  count  = data.coder_workspace.me.start_count
+  source   = "registry.coder.com/coder/coder-login/coder"
 
-  healthcheck {
-    url       = "http://localhost:13337/healthz"
-    interval  = 3
-    threshold = 10
+  version  = ">=1.0.30"
+  agent_id = coder_agent.main.id
+}
+
+module "code-server" {
+  count  = data.coder_workspace.me.start_count
+  source   = "registry.coder.com/coder/code-server/coder"
+
+  version  = ">=1.3.0"
+  agent_id = coder_agent.main.id
+
+  subdomain = true
+  folder = "~/craft-baseplate"
+  settings = {
+    "telemetry.telemetryLevel" = "off"
   }
+}
+
+module "jetbrains_gateway" {
+  count  = data.coder_workspace.me.start_count
+  source         = "registry.coder.com/modules/jetbrains-gateway/coder"
+
+  version        = ">=1.2.1"
+  agent_id       = coder_agent.main.id
+
+  latest         = true
+  folder         = "/home/coder"
+  jetbrains_ides = ["IU", "PS", "WS", "PY", "CL", "GO", "RM", "RD", "RR"]
+  default        = "WS"
 }
